@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='/images/HBMS.ico') }}"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HBMS - Dashboard</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      :root {
+        --sidebar-width: 250px;
+        --header-height: 70px;
+        --primary-color: #1e3c72;
+        --secondary-color: #ff7e5f;
+        --hover-color: #2a5298;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #f5f7fa;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        background: var(--primary-color);
+        color: white;
+        transition: 0.3s;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto; /* Enables scrolling for menu items */
+        overflow-x: hidden; /* Prevents horizontal scrolling */
+        max-height: 100vh; /* Keeps sidebar within viewport height */
+        scrollbar-width: thin; /* Makes scrollbar thinner */
+        scrollbar-color: #ccc transparent; /* Custom scrollbar colors */
+      }
+
+      /* Optional: Style the scrollbar for WebKit browsers */
+      .sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb {
+        background-color: #888; /* Scrollbar color */
+        border-radius: 5px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb:hover {
+        background-color: #555; /* Darker on hover */
+      }
+
+      /* Ensure the content inside the sidebar doesn't overflow */
+      .sidebar nav {
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden; /* Extra safety */
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 10px;
+        color: white;
+        text-decoration: none; /* Removes underline */
+        border-radius: 5px;
+        transition: 0.3s;
+        cursor: pointer;
+      }
+
+      .nav-item:hover {
+        background-color: #2a5298;
+      }
+
+      .nav-item.active {
+        background-color: #ff7e5f;
+      }
+
+      /* Ensure all nested elements inside links also inherit no underline */
+      .nav-item i,
+      .nav-item span {
+        text-decoration: none; /* Ensures icons and text don't get underlined */
+      }
+
+      .sidebar-header {
+        position: sticky;
+        top: 0;
+        background: var(--primary-color);
+        z-index: 1001; /* Ensures it stays above scrolling content */
+        padding: 1rem 0;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-header img {
+        width: 140px; /* Adjust width */
+        max-width: 100%;
+        height: auto; /* Maintain aspect ratio */
+        display: block; /* Remove extra space */
+        margin: 0 auto; /* Center the image */
+      }
+
+      /* Header Styles */
+      .header {
+        position: fixed;
+        right: 0;
+        top: 0;
+        left: var(--sidebar-width);
+        height: var(--header-height);
+        background: white;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        z-index: 999;
+      }
+
+      /* Main Content Area */
+      .main-content {
+        margin-left: var(--sidebar-width);
+        padding-top: var(--header-height);
+        padding: calc(var(--header-height) + 20px) 20px 20px;
+        min-height: 100vh;
+      }
+
+      .search-bar {
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border-radius: 25px;
+        padding: 8px 15px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        transition: all 0.3s ease-in-out;
+        border: 1px solid #ccc;
+        position: relative;
+      }
+
+      .search-bar i {
+        font-size: 16px;
+        color: #666;
+        position: absolute;
+        left: 12px; /* Adjust icon position inside the box */
+      }
+
+      .search-bar input {
+        border: none;
+        outline: none;
+        font-size: 16px;
+        padding: 8px 10px 8px 35px; /* Left padding to prevent overlap */
+        width: 100%;
+        background: transparent;
+        border-radius: 25px;
+      }
+
+      .search-bar:hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      }
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+      .user-avatar img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      /* Dropdown Styles */
+      .profile-dropdown {
+        position: absolute;
+        top: 70px; /* Adjust to match header height */
+        right: 20px;
+        background: white;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        width: 200px;
+        padding: 15px;
+        display: none; /* Initially Hidden */
+        z-index: 1000;
+      }
+
+      .profile-header {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .profile-header img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+      }
+
+      .profile-header h4 {
+        font-size: 16px;
+        color: #333;
+      }
+
+      .profile-dropdown button {
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px 0;
+        transition: background 0.3s;
+      }
+
+      .profile-dropdown button:hover {
+        background: var(--hover-color);
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 200px;
+        display: none;
+        z-index: 1000;
+        margin-top: 10px;
+        border: 1px solid #eee;
+      }
+
+      .dropdown-menu.active {
+        display: block;
+      }
+
+      .dropdown-item {
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #333;
+        text-decoration: none;
+        transition: background-color 0.2s;
+      }
+
+      .dropdown-item:first-child {
+        border-radius: 8px 8px 0 0;
+      }
+
+      .dropdown-item:last-child {
+        border-radius: 0 0 8px 8px;
+      }
+
+      .dropdown-item:hover {
+        background-color: #f5f7fa;
+      }
+
+      .dropdown-item i {
+        width: 16px;
+        color: var(--primary-color);
+      }
+
+      /* Add arrow to dropdown */
+      .dropdown-menu::before {
+        content: "";
+        position: absolute;
+        top: -8px;
+        right: 20px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        transform: rotate(45deg);
+        border-left: 1px solid #eee;
+        border-top: 1px solid #eee;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+
+        .header {
+          left: 0;
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+
+        .sidebar.active {
+          transform: translateX(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <img src="static/images/HBMS.png" alt="Logo" />
+        <h3>BMS Dashboard</h3>
+      </div>
+      <nav>
+        <a href="/home" class="nav-item">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="/live-monitoring" class="nav-item">
+          <i class="fas fa-video"></i>
+          <span>Live Monitoring</span>
+        </a>
+        <a href="/analytics" class="nav-item active">
+          <i class="fas fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="/notifications" class="nav-item">
+          <i class="fas fa-bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="/reports" class="nav-item">
+          <i class="fas fa-file-alt"></i>
+          <span>Reports</span>
+        </a>
+        <a href="/appointments" class="nav-item">
+          <i class="fas fa-calendar-check"></i>
+          <span>Appointments</span>
+        </a>
+        <a href="/chat" class="nav-item">
+          <i class="fas fa-robot"></i>
+          <span>AI Chat Assistance</span>
+        </a>
+        <a href="/education" class="nav-item">
+          <i class="fas fa-book-medical"></i>
+          <span>Health Education</span>
+        </a>
+        <a href="/sensor-management" class="nav-item">
+          <i class="fas fa-microchip"></i>
+          <span>Sensor Management</span>
+        </a>
+        <a href="/user-management" class="nav-item">
+          <i class="fas fa-users"></i>
+          <span>User Management</span>
+        </a>
+
+        <a href="/professional-about-us-page" class="nav-item">
+          <i class="fas fa-info-circle"></i>
+          <span>About Us</span>
+        </a>
+        <a href="/feedback" class="nav-item">
+          <i class="fas fa-comment-dots"></i>
+          <span>Feedback</span>
+        </a>
+        <a href="/change-password" class="nav-item">
+          <i class="fas fa-key"></i>
+          <span>Change Password</span>
+        </a>
+        <a href="#" class="nav-item" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </nav>
+    </div>
+
+    <header class="header">
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search..." />
+      </div>
+      <div class="user-profile">
+        <div class="notifications">
+          <i class="fas fa-bell"></i>
+        </div>
+        <div class="user-avatar">
+          <!-- Profile picture will be inserted dynamically -->
+        </div>
+        <div class="user-info">
+          <h4 id="user-name">Loading...</h4>
+        </div>
+        <!-- Add Dropdown Menu -->
+        <div class="dropdown-menu">
+          <a
+            href="#"
+            class="dropdown-item"
+            id="update-profile-btn"
+            data-page="/firebase-profile-update"
+          >
+            <i class="fas fa-user"></i>
+            Update Profile
+          </a>
+          <a href="#" class="dropdown-item" id="logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div id="main-content" class="main-content">
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          />
+          <title>Health Data Analytics Dashboard</title>
+
+          <!-- Firebase SDK -->
+          <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+          <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+          <!-- Chart.js for Visualizations -->
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+
+          <!-- Tailwind CSS for styling -->
+          <script src="https://cdn.tailwindcss.com"></script>
+
+          <style>
+            body {
+              background-color: #f4f7fa;
+              font-family: "Inter", sans-serif;
+            }
+            .chart-container {
+              background-color: white;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .stat-card {
+              background-color: white;
+              border-radius: 12px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+              transition: transform 0.3s ease;
+            }
+            .stat-card:hover {
+              transform: translateY(-5px);
+            }
+          </style>
+        </head>
+        <body class="bg-gray-100">
+          <div class="container mx-auto px-4 py-8">
+            <header class="mb-8">
+              <h1 class="text-3xl font-bold text-gray-800">
+                Health Analytics Dashboard
+              </h1>
+              <p class="text-gray-600">
+                Real-time insights into patient health metrics
+              </p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <!-- Summary Statistics Cards -->
+              <div class="stat-card p-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">
+                  Average Heart Rate
+                </h3>
+                <div class="text-3xl font-bold text-blue-600" id="avgHeartRate">
+                  --
+                </div>
+                <div class="text-sm text-gray-500">Last 24 hours</div>
+              </div>
+              <div class="stat-card p-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">
+                  Temperature Trend
+                </h3>
+                <div
+                  class="text-3xl font-bold text-green-600"
+                  id="avgTemperature"
+                >
+                  --
+                </div>
+                <div class="text-sm text-gray-500">Avg Body Temperature</div>
+              </div>
+              <div class="stat-card p-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">
+                  Critical Alerts
+                </h3>
+                <div
+                  class="text-3xl font-bold text-red-600"
+                  id="criticalAlerts"
+                >
+                  0
+                </div>
+                <div class="text-sm text-gray-500">Potential health risks</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Detailed Visualizations -->
+              <div class="chart-container p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                  Vital Signs Trends
+                </h2>
+                <canvas id="vitalSignsChart" class="w-full h-96"></canvas>
+              </div>
+
+              <div class="chart-container p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                  Health Risk Distribution
+                </h2>
+                <canvas id="riskDistributionChart" class="w-full h-96"></canvas>
+              </div>
+            </div>
+
+            <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+              <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                Recent Health Measurements
+              </h2>
+              <div class="overflow-x-auto">
+                <table
+                  class="w-full text-sm text-left text-gray-600"
+                  id="recentDataTable"
+                >
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="p-3">Timestamp</th>
+                      <th class="p-3">Heart Rate</th>
+                      <th class="p-3">Temperature</th>
+                      <th class="p-3">Oxygen Level</th>
+                      <th class="p-3">Blood Pressure</th>
+                      <th class="p-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentDataBody">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            // Firebase Configuration (use the same config as the monitoring page)
+            const firebaseConfig = {
+              apiKey: "AIzaSyCvHiTAGdlMaH2WNb4LmxlUMJ9BIwNxF_g",
+              authDomain: "bms-exsel.firebaseapp.com",
+              databaseURL: "https://bms-exsel-default-rtdb.firebaseio.com/",
+              projectId: "bms-exsel",
+              storageBucket: "bms-exsel.appspot.com",
+              messagingSenderId: "950039193184",
+              appId: "1:950039193184:web:f97fc79d5798ab3f628505",
+              measurementId: "G-L8S1N8Q0CD",
+            };
+
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
+            // Chart instances
+            let vitalSignsChart;
+            let riskDistributionChart;
+
+            // Initialize Charts
+            function initCharts() {
+              // Vital Signs Trend Chart
+              const vitalCtx = document
+                .getElementById("vitalSignsChart")
+                .getContext("2d");
+              vitalSignsChart = new Chart(vitalCtx, {
+                type: "line",
+                data: {
+                  labels: [],
+                  datasets: [
+                    {
+                      label: "Heart Rate",
+                      data: [],
+                      borderColor: "rgb(255, 99, 132)",
+                      tension: 0.1,
+                    },
+                    {
+                      label: "Temperature",
+                      data: [],
+                      borderColor: "rgb(54, 162, 235)",
+                      tension: 0.1,
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  scales: {
+                    y: {
+                      beginAtZero: false,
+                    },
+                  },
+                },
+              });
+
+              // Risk Distribution Chart
+              const riskCtx = document
+                .getElementById("riskDistributionChart")
+                .getContext("2d");
+              riskDistributionChart = new Chart(riskCtx, {
+                type: "doughnut",
+                data: {
+                  labels: ["Low Risk", "Medium Risk", "High Risk"],
+                  datasets: [
+                    {
+                      data: [0, 0, 0],
+                      backgroundColor: [
+                        "rgb(75, 192, 192)",
+                        "rgb(255, 205, 86)",
+                        "rgb(255, 99, 132)",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: "top",
+                    },
+                  },
+                },
+              });
+            }
+
+            // Analyze and categorize risk
+            function categorizeRisk(data) {
+              let riskLevel = 0;
+
+              // Heart Rate Risk
+              if (data.heart_rate < 60 || data.heart_rate > 100) riskLevel++;
+
+              // Temperature Risk
+              if (data.temperature < 36.1 || data.temperature > 37.2)
+                riskLevel++;
+
+              // Oxygen Level Risk
+              if (data.oxygen_level < 95) riskLevel++;
+
+              // Blood Pressure Risk
+              const systolic = data.blood_pressure.systolic;
+              const diastolic = data.blood_pressure.diastolic;
+              if (
+                systolic > 140 ||
+                systolic < 90 ||
+                diastolic > 90 ||
+                diastolic < 60
+              )
+                riskLevel++;
+
+              return riskLevel;
+            }
+
+            // Listen for new data in Firebase
+            function setupRealtimeUpdates() {
+              const healthDataRef = database.ref("health_data");
+
+              // Arrays to store historical data
+              const timestamps = [];
+              const heartRates = [];
+              const temperatures = [];
+              const riskDistribution = [0, 0, 0];
+
+              healthDataRef.on("child_added", (snapshot) => {
+                const data = snapshot.val();
+                const timestamp = new Date(data.timestamp);
+
+                // Update Recent Data Table
+                updateRecentDataTable(data, timestamp);
+
+                // Update Charts
+                timestamps.push(timestamp.toLocaleTimeString());
+                heartRates.push(data.heart_rate);
+                temperatures.push(data.temperature);
+
+                // Update Vital Signs Chart
+                if (vitalSignsChart) {
+                  vitalSignsChart.data.labels = timestamps;
+                  vitalSignsChart.data.datasets[0].data = heartRates;
+                  vitalSignsChart.data.datasets[1].data = temperatures;
+                  vitalSignsChart.update();
+                }
+
+                // Calculate Risk Distribution
+                const riskLevel = categorizeRisk(data);
+                riskDistribution[riskLevel]++;
+
+                // Update Risk Distribution Chart
+                if (riskDistributionChart) {
+                  riskDistributionChart.data.datasets[0].data =
+                    riskDistribution;
+                  riskDistributionChart.update();
+                }
+
+                // Update Summary Statistics
+                updateSummaryStatistics(data, riskLevel);
+              });
+            }
+
+            // Update Recent Data Table
+            function updateRecentDataTable(data, timestamp) {
+              const tableBody = document.getElementById("recentDataBody");
+              const row = tableBody.insertRow(0);
+
+              row.innerHTML = `
+                <td class="p-3">${timestamp.toLocaleString()}</td>
+                <td class="p-3">${data.heart_rate} BPM</td>
+                <td class="p-3">${data.temperature}°C</td>
+                <td class="p-3">${data.oxygen_level}%</td>
+                <td class="p-3">${data.blood_pressure.systolic}/${
+                data.blood_pressure.diastolic
+              } mmHg</td>
+                <td class="p-3">
+                    <span class="px-2 py-1 rounded ${getStatusClass(data)}">
+                        ${getStatusText(data)}
+                    </span>
+                </td>
+            `;
+
+              // Limit table to last 10 entries
+              if (tableBody.rows.length > 10) {
+                tableBody.deleteRow(-1);
+              }
+            }
+
+            // Determine status class based on risk
+            function getStatusClass(data) {
+              const riskLevel = categorizeRisk(data);
+              switch (riskLevel) {
+                case 0:
+                  return "bg-green-200 text-green-800";
+                case 1:
+                  return "bg-yellow-200 text-yellow-800";
+                default:
+                  return "bg-red-200 text-red-800";
+              }
+            }
+
+            // Get status text
+            function getStatusText(data) {
+              const riskLevel = categorizeRisk(data);
+              switch (riskLevel) {
+                case 0:
+                  return "Low Risk";
+                case 1:
+                  return "Medium Risk";
+                default:
+                  return "High Risk";
+              }
+            }
+
+            // Update Summary Statistics
+            function updateSummaryStatistics(data, riskLevel) {
+              // Average Heart Rate (last 24 hours)
+              document.getElementById("avgHeartRate").textContent =
+                data.heart_rate + " BPM";
+
+              // Average Temperature
+              document.getElementById("avgTemperature").textContent =
+                data.temperature + "°C";
+
+              // Critical Alerts
+              const criticalAlertsElem =
+                document.getElementById("criticalAlerts");
+              const currentAlerts = parseInt(criticalAlertsElem.textContent);
+              criticalAlertsElem.textContent =
+                riskLevel > 1 ? currentAlerts + 1 : currentAlerts;
+            }
+
+            // Initialize on DOM load
+            document.addEventListener("DOMContentLoaded", () => {
+              initCharts();
+              setupRealtimeUpdates();
+            });
+          </script>
+        </body>
+      </html>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCvHiTAGdlMaH2WNb4LmxlUMJ9BIwNxF_g",
+        authDomain: "bms-exsel.firebaseapp.com",
+        projectId: "bms-exsel",
+        storageBucket: "bms-exsel.appspot.com",
+        messagingSenderId: "950039193184",
+        appId: "1:950039193184:web:f97fc79d5798ab3f628505",
+        measurementId: "G-L8S1N8Q0CD",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+
+      // Function to Update User Profile
+      function updateUserProfile(user) {
+        if (!user) return;
+
+        console.log("Updating User Profile:", user); // Debugging Step
+
+        const userName = user.displayName || "User";
+        const userProfilePicture =
+          user.photoURL || "https://via.placeholder.com/40"; // Default image
+
+        // Update UI Elements
+        document.getElementById("user-name").textContent = userName;
+        document.querySelector(
+          ".user-avatar"
+        ).innerHTML = `<img src="${userProfilePicture}" alt="User Avatar">`;
+      }
+
+      // Load User Profile on Authentication State Change
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          console.log("User Logged In:", user);
+          updateUserProfile(user);
+        } else {
+          console.warn("User not logged in, redirecting...");
+          window.location.href = "{{ url_for('home') }}";
+        }
+      });
+
+      // Toggle dropdown when clicking on user profile
+      document.querySelector(".user-profile").addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent event from bubbling
+        document.querySelector(".dropdown-menu").classList.toggle("active");
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        const dropdown = document.querySelector(".dropdown-menu");
+        const userProfile = document.querySelector(".user-profile");
+
+        if (!userProfile.contains(e.target)) {
+          dropdown.classList.remove("active");
+        }
+      });
+      function loadPage(pageUrl) {
+        const mainContent = document.getElementById("main-content");
+
+        mainContent.innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
+      <p>Loading...</p>
+    </div>`;
+
+        fetch(pageUrl)
+          .then((response) => response.text())
+          .then((html) => {
+            mainContent.innerHTML = html;
+
+            // Re-run Firebase authentication after loading new content
+            onAuthStateChanged(auth, (user) => {
+              if (user) {
+                updateUserProfile(user);
+              }
+            });
+
+            // Extract and execute new scripts
+            mainContent.querySelectorAll("script").forEach((oldScript) => {
+              const newScript = document.createElement("script");
+              newScript.textContent = oldScript.textContent;
+              document.body.appendChild(newScript);
+            });
+          })
+          .catch((error) => console.error("Error loading page:", error));
+      }
+
+      // Attach navigation event listeners
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", function (event) {
+          event.preventDefault();
+          const pageUrl = this.getAttribute("href");
+          loadPage(pageUrl);
+        });
+      });
+
+      // Logout Function
+      document
+        .getElementById("logout-btn")
+        .addEventListener("click", logoutUser);
+
+      function logoutUser() {
+        signOut(auth)
+          .then(() => {
+            console.log("User signed out.");
+            window.location.href = "{{ url_for('home') }}";
+          })
+          .catch((error) => {
+            console.error("Logout Error:", error);
+          });
+      }
+    </script>
+  </body>
+</html>

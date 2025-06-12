@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='/images/HBMS.ico') }}"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BMS - Dashboard</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      :root {
+        --sidebar-width: 250px;
+        --header-height: 70px;
+        --primary-color: #1e3c72;
+        --secondary-color: #ff7e5f;
+        --hover-color: #2a5298;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #f5f7fa;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        background: var(--primary-color);
+        color: white;
+        transition: 0.3s;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto; /* Enables scrolling for menu items */
+        overflow-x: hidden; /* Prevents horizontal scrolling */
+        max-height: 100vh; /* Keeps sidebar within viewport height */
+        scrollbar-width: thin; /* Makes scrollbar thinner */
+        scrollbar-color: #ccc transparent; /* Custom scrollbar colors */
+      }
+
+      /* Optional: Style the scrollbar for WebKit browsers */
+      .sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb {
+        background-color: #888; /* Scrollbar color */
+        border-radius: 5px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb:hover {
+        background-color: #555; /* Darker on hover */
+      }
+
+      /* Ensure the content inside the sidebar doesn't overflow */
+      .sidebar nav {
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden; /* Extra safety */
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 10px;
+        color: white;
+        text-decoration: none; /* Removes underline */
+        border-radius: 5px;
+        transition: 0.3s;
+        cursor: pointer;
+      }
+
+      .nav-item:hover {
+        background-color: #2a5298;
+      }
+
+      .nav-item.active {
+        background-color: #ff7e5f;
+      }
+
+      /* Ensure all nested elements inside links also inherit no underline */
+      .nav-item i,
+      .nav-item span {
+        text-decoration: none; /* Ensures icons and text don't get underlined */
+      }
+
+      .sidebar-header {
+        position: sticky;
+        top: 0;
+        background: var(--primary-color);
+        z-index: 1001; /* Ensures it stays above scrolling content */
+        padding: 1rem 0;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-header img {
+        width: 140px; /* Adjust width */
+        max-width: 100%;
+        height: auto; /* Maintain aspect ratio */
+        display: block; /* Remove extra space */
+        margin: 0 auto; /* Center the image */
+      }
+
+      /* Header Styles */
+      .header {
+        position: fixed;
+        right: 0;
+        top: 0;
+        left: var(--sidebar-width);
+        height: var(--header-height);
+        background: white;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        z-index: 999;
+      }
+
+      /* Main Content Area */
+      .main-content {
+        margin-left: var(--sidebar-width);
+        padding-top: var(--header-height);
+        padding: calc(var(--header-height) + 20px) 20px 20px;
+        min-height: 100vh;
+      }
+
+      .search-bar {
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border-radius: 25px;
+        padding: 8px 15px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        transition: all 0.3s ease-in-out;
+        border: 1px solid #ccc;
+        position: relative;
+      }
+
+      .search-bar i {
+        font-size: 16px;
+        color: #666;
+        position: absolute;
+        left: 12px; /* Adjust icon position inside the box */
+      }
+
+      .search-bar input {
+        border: none;
+        outline: none;
+        font-size: 16px;
+        padding: 8px 10px 8px 35px; /* Left padding to prevent overlap */
+        width: 100%;
+        background: transparent;
+        border-radius: 25px;
+      }
+
+      .search-bar:hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      }
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+      .user-avatar img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      /* Dropdown Styles */
+      .profile-dropdown {
+        position: absolute;
+        top: 70px; /* Adjust to match header height */
+        right: 20px;
+        background: white;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        width: 200px;
+        padding: 15px;
+        display: none; /* Initially Hidden */
+        z-index: 1000;
+      }
+
+      .profile-header {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .profile-header img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+      }
+
+      .profile-header h4 {
+        font-size: 16px;
+        color: #333;
+      }
+
+      .profile-dropdown button {
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px 0;
+        transition: background 0.3s;
+      }
+
+      .profile-dropdown button:hover {
+        background: var(--hover-color);
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 200px;
+        display: none;
+        z-index: 1000;
+        margin-top: 10px;
+        border: 1px solid #eee;
+      }
+
+      .dropdown-menu.active {
+        display: block;
+      }
+
+      .dropdown-item {
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #333;
+        text-decoration: none;
+        transition: background-color 0.2s;
+      }
+
+      .dropdown-item:first-child {
+        border-radius: 8px 8px 0 0;
+      }
+
+      .dropdown-item:last-child {
+        border-radius: 0 0 8px 8px;
+      }
+
+      .dropdown-item:hover {
+        background-color: #f5f7fa;
+      }
+
+      .dropdown-item i {
+        width: 16px;
+        color: var(--primary-color);
+      }
+
+      /* Add arrow to dropdown */
+      .dropdown-menu::before {
+        content: "";
+        position: absolute;
+        top: -8px;
+        right: 20px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        transform: rotate(45deg);
+        border-left: 1px solid #eee;
+        border-top: 1px solid #eee;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+
+        .header {
+          left: 0;
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+
+        .sidebar.active {
+          transform: translateX(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <img src="static/images/HBMS.png" alt="Logo" />
+        <h3>HBMS Dashboard</h3>
+      </div>
+      <nav>
+        <a href="/home" class="nav-item">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="/ive-monitoring" class="nav-item">
+          <i class="fas fa-video"></i>
+          <span>Live Monitoring</span>
+        </a>
+        <a href="/analytics" class="nav-item">
+          <i class="fas fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="/notifications" class="nav-item">
+          <i class="fas fa-bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="/reports" class="nav-item">
+          <i class="fas fa-file-alt"></i>
+          <span>Reports</span>
+        </a>
+        <a href="/appointments" class="nav-item">
+          <i class="fas fa-calendar-check"></i>
+          <span>Appointments</span>
+        </a>
+        <a href="/chat" class="nav-item">
+          <i class="fas fa-robot"></i>
+          <span>AI Chat Assistance</span>
+        </a>
+        <a href="/education" class="nav-item">
+          <i class="fas fa-book-medical"></i>
+          <span>Health Education</span>
+        </a>
+        <a href="/sensor-management" class="nav-item">
+          <i class="fas fa-microchip"></i>
+          <span>Sensor Management</span>
+        </a>
+        <a href="/user-management" class="nav-item">
+          <i class="fas fa-users"></i>
+          <span>User Management</span>
+        </a>
+       
+        </a>
+        <a href="/professional-about-us-page" class="nav-item">
+          <i class="fas fa-info-circle"></i>
+          <span>About Us</span>
+        </a>
+        <a href="/feedback" class="nav-item active">
+          <i class="fas fa-comment-dots"></i>
+          <span>Feedback</span>
+        </a>
+        <a href="/change-password" class="nav-item">
+          <i class="fas fa-key"></i>
+          <span>Change Password</span>
+        </a>
+        <a href="#" class="nav-item" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </nav>
+    </div>
+
+    <header class="header">
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search..." />
+      </div>
+      <div class="user-profile">
+        <div class="notifications">
+          <i class="fas fa-bell"></i>
+        </div>
+        <div class="user-avatar">
+          <!-- Profile picture will be inserted dynamically -->
+        </div>
+        <div class="user-info">
+          <h4 id="user-name">Loading...</h4>
+        </div>
+        <!-- Add Dropdown Menu -->
+        <div class="dropdown-menu">
+          <a
+            href="#"
+            class="dropdown-item"
+            id="update-profile-btn"
+            data-page="/firebase-profile-update"
+          >
+            <i class="fas fa-user"></i>
+            Update Profile
+          </a>
+          <a href="#" class="dropdown-item" id="logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div id="main-content" class="main-content">
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          />
+          <title>BMS - Feedback</title>
+          <link
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+            rel="stylesheet"
+          />
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+              font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            :root {
+              --primary-color: #1e3c72;
+              --secondary-color: #ff7e5f;
+              --hover-color: #2a5298;
+              --border-radius: 10px;
+              --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+              --success-color: #4caf50;
+              --warning-color: #ff9800;
+              --error-color: #f44336;
+            }
+
+            .feedback-container {
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+
+            .page-title {
+              font-size: 24px;
+              margin-bottom: 20px;
+              color: var(--primary-color);
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+
+            .page-description {
+              color: #666;
+              margin-bottom: 30px;
+              line-height: 1.6;
+            }
+
+            .feedback-card {
+              background: white;
+              border-radius: var(--border-radius);
+              box-shadow: var(--card-shadow);
+              padding: 30px;
+              margin-bottom: 30px;
+            }
+
+            .form-group {
+              margin-bottom: 25px;
+            }
+
+            .form-group label {
+              display: block;
+              margin-bottom: 8px;
+              color: #444;
+              font-weight: 500;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+              width: 100%;
+              padding: 12px 15px;
+              border: 1px solid #ddd;
+              border-radius: 6px;
+              font-size: 16px;
+              transition: border-color 0.3s, box-shadow 0.3s;
+            }
+
+            .form-group input:focus,
+            .form-group textarea:focus,
+            .form-group select:focus {
+              border-color: var(--primary-color);
+              box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+              outline: none;
+            }
+
+            .form-group textarea {
+              min-height: 150px;
+              resize: vertical;
+            }
+
+            .rating-container {
+              display: flex;
+              gap: 10px;
+              margin-top: 10px;
+            }
+
+            .rating-star {
+              font-size: 30px;
+              color: #ddd;
+              cursor: pointer;
+              transition: color 0.3s;
+            }
+
+            .rating-star:hover,
+            .rating-star.active {
+              color: #ffc107;
+            }
+
+            .checkbox-group {
+              margin-top: 10px;
+            }
+
+            .checkbox-item {
+              display: flex;
+              align-items: center;
+              margin-bottom: 10px;
+            }
+
+            .checkbox-item input[type="checkbox"] {
+              width: auto;
+              margin-right: 10px;
+            }
+
+            .submit-btn {
+              background: var(--primary-color);
+              color: white;
+              border: none;
+              padding: 12px 25px;
+              border-radius: 6px;
+              font-size: 16px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: background 0.3s;
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+            }
+
+            .submit-btn:hover {
+              background: var(--hover-color);
+            }
+
+            .cancel-btn {
+              background: #f5f5f5;
+              color: #333;
+              border: 1px solid #ddd;
+              padding: 12px 25px;
+              border-radius: 6px;
+              font-size: 16px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: background 0.3s;
+              margin-right: 10px;
+            }
+
+            .cancel-btn:hover {
+              background: #eaeaea;
+            }
+
+            .button-group {
+              display: flex;
+              gap: 10px;
+            }
+
+            .feedback-history {
+              background: white;
+              border-radius: var(--border-radius);
+              box-shadow: var(--card-shadow);
+              padding: 20px 30px;
+            }
+
+            .feedback-history h2 {
+              font-size: 20px;
+              color: var(--primary-color);
+              margin-bottom: 20px;
+            }
+
+            .feedback-list {
+              max-height: 300px;
+              overflow-y: auto;
+            }
+
+            .feedback-item {
+              padding: 15px 0;
+              border-bottom: 1px solid #eee;
+            }
+
+            .feedback-item:last-child {
+              border-bottom: none;
+            }
+
+            .feedback-header {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 8px;
+            }
+
+            .feedback-date {
+              color: #888;
+              font-size: 14px;
+            }
+
+            .feedback-type {
+              font-weight: 500;
+              color: var(--primary-color);
+            }
+
+            .feedback-message {
+              color: #555;
+              line-height: 1.5;
+              margin-bottom: 8px;
+            }
+
+            .feedback-status {
+              display: inline-block;
+              padding: 4px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: 500;
+              background: #f1f1f1;
+              color: #666;
+            }
+
+            .status-pending {
+              background: #fff8e1;
+              color: #ffa000;
+            }
+
+            .status-reviewed {
+              background: #e8f5e9;
+              color: #388e3c;
+            }
+
+            .status-implemented {
+              background: #e3f2fd;
+              color: #1976d2;
+            }
+
+            /* Animation for the thank you message */
+            @keyframes fadeInUp {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+
+            .thank-you-message {
+              display: none;
+              background: #e8f5e9;
+              color: #388e3c;
+              padding: 20px;
+              border-radius: var(--border-radius);
+              text-align: center;
+              margin-bottom: 20px;
+              animation: fadeInUp 0.5s ease-out;
+            }
+
+            .thank-you-message h3 {
+              margin-bottom: 10px;
+              color: #2e7d32;
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+              .feedback-container {
+                padding: 15px;
+              }
+
+              .feedback-card {
+                padding: 20px;
+              }
+
+              .button-group {
+                flex-direction: column;
+              }
+
+              .cancel-btn {
+                margin-right: 0;
+                margin-bottom: 10px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="feedback-container">
+            <h1 class="page-title">
+              <i class="fas fa-comment-dots"></i>
+              Feedback
+            </h1>
+
+            <p class="page-description">
+              We value your feedback! Please let us know about your experience
+              with our Building Management System. Your suggestions help us
+              improve our services and make the system better for everyone.
+            </p>
+
+            <div id="thank-you-message" class="thank-you-message">
+              <h3>
+                <i class="fas fa-check-circle"></i> Thank you for your feedback!
+              </h3>
+              <p>
+                Your submission has been received. We appreciate your input and
+                will review it promptly.
+              </p>
+            </div>
+
+            <div class="feedback-card">
+              <form id="feedback-form">
+                <div class="form-group">
+                  <label for="feedback-type">Feedback Type</label>
+                  <select id="feedback-type" required>
+                    <option value="" disabled selected>
+                      Select feedback type
+                    </option>
+                    <option value="suggestion">Suggestion</option>
+                    <option value="bug">Bug Report</option>
+                    <option value="feature">Feature Request</option>
+                    <option value="complaint">Complaint</option>
+                    <option value="praise">Praise</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="feedback-subject">Subject</label>
+                  <input
+                    type="text"
+                    id="feedback-subject"
+                    placeholder="Brief description of your feedback"
+                    required
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="feedback-message">Your Feedback</label>
+                  <textarea
+                    id="feedback-message"
+                    placeholder="Please provide details about your experience or suggestion..."
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label
+                    >How would you rate your experience with the BMS?</label
+                  >
+                  <div class="rating-container">
+                    <i class="fas fa-star rating-star" data-rating="1"></i>
+                    <i class="fas fa-star rating-star" data-rating="2"></i>
+                    <i class="fas fa-star rating-star" data-rating="3"></i>
+                    <i class="fas fa-star rating-star" data-rating="4"></i>
+                    <i class="fas fa-star rating-star" data-rating="5"></i>
+                  </div>
+                  <input type="hidden" id="rating-value" value="0" />
+                </div>
+
+                <div class="form-group">
+                  <label
+                    >Which aspects of the system does your feedback
+                    concern?</label
+                  >
+                  <div class="checkbox-group">
+                    <div class="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="aspect-ui"
+                        name="aspects[]"
+                        value="UI"
+                      />
+                      <label for="aspect-ui">User Interface</label>
+                    </div>
+                    <div class="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="aspect-performance"
+                        name="aspects[]"
+                        value="Performance"
+                      />
+                      <label for="aspect-performance">System Performance</label>
+                    </div>
+                    <div class="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="aspect-features"
+                        name="aspects[]"
+                        value="Features"
+                      />
+                      <label for="aspect-features"
+                        >Features & Functionality</label
+                      >
+                    </div>
+                    <div class="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="aspect-monitoring"
+                        name="aspects[]"
+                        value="Monitoring"
+                      />
+                      <label for="aspect-monitoring">Monitoring & Alerts</label>
+                    </div>
+                    <div class="checkbox-item">
+                      <input
+                        type="checkbox"
+                        id="aspect-other"
+                        name="aspects[]"
+                        value="Other"
+                      />
+                      <label for="aspect-other">Other</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="feedback-priority">Priority</label>
+                  <select id="feedback-priority">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+
+                <div class="button-group">
+                  <button type="button" class="cancel-btn" id="cancel-btn">
+                    Cancel
+                  </button>
+                  <button type="submit" class="submit-btn">
+                    <i class="fas fa-paper-plane"></i>
+                    Submit Feedback
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="feedback-history">
+              <h2>Your Previous Feedback</h2>
+
+              <div class="feedback-list" id="feedback-list">
+                <!-- Sample feedback items - these would be populated from database -->
+                <div class="feedback-item">
+                  <div class="feedback-header">
+                    <div class="feedback-type">Feature Request</div>
+                    <div class="feedback-date">Feb 28, 2025</div>
+                  </div>
+                  <div class="feedback-message">
+                    It would be helpful to have a mobile notification feature
+                    for critical alerts when away from the dashboard.
+                  </div>
+                  <div class="feedback-status status-implemented">
+                    Implemented
+                  </div>
+                </div>
+
+                <div class="feedback-item">
+                  <div class="feedback-header">
+                    <div class="feedback-type">Bug Report</div>
+                    <div class="feedback-date">Feb 15, 2025</div>
+                  </div>
+                  <div class="feedback-message">
+                    Temperature readings occasionally showing incorrect values
+                    on the dashboard.
+                  </div>
+                  <div class="feedback-status status-reviewed">Reviewed</div>
+                </div>
+
+                <div class="feedback-item">
+                  <div class="feedback-header">
+                    <div class="feedback-type">Suggestion</div>
+                    <div class="feedback-date">Jan 23, 2025</div>
+                  </div>
+                  <div class="feedback-message">
+                    The analytics page could benefit from more customizable date
+                    ranges for better trend analysis.
+                  </div>
+                  <div class="feedback-status status-pending">Pending</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            document.addEventListener("DOMContentLoaded", function () {
+              // Star rating functionality
+              const stars = document.querySelectorAll(".rating-star");
+              const ratingInput = document.getElementById("rating-value");
+
+              stars.forEach((star) => {
+                star.addEventListener("click", function () {
+                  const rating = this.getAttribute("data-rating");
+                  ratingInput.value = rating;
+
+                  // Update star colors
+                  stars.forEach((s) => {
+                    if (s.getAttribute("data-rating") <= rating) {
+                      s.classList.add("active");
+                    } else {
+                      s.classList.remove("active");
+                    }
+                  });
+                });
+              });
+
+              // Form submission
+              const feedbackForm = document.getElementById("feedback-form");
+              const thankYouMessage =
+                document.getElementById("thank-you-message");
+
+              feedbackForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                // Get form values
+                const feedbackType =
+                  document.getElementById("feedback-type").value;
+                const subject =
+                  document.getElementById("feedback-subject").value;
+                const message =
+                  document.getElementById("feedback-message").value;
+                const rating = document.getElementById("rating-value").value;
+                const priority =
+                  document.getElementById("feedback-priority").value;
+
+                // Get selected aspects
+                const aspects = [];
+                document
+                  .querySelectorAll('input[name="aspects[]"]:checked')
+                  .forEach((checkbox) => {
+                    aspects.push(checkbox.value);
+                  });
+
+                // Create feedback object
+                const feedbackData = {
+                  type: feedbackType,
+                  subject: subject,
+                  message: message,
+                  rating: rating,
+                  aspects: aspects,
+                  priority: priority,
+                  timestamp: new Date().toISOString(),
+                };
+
+                console.log("Feedback submitted:", feedbackData);
+
+                // In a real application, you would send this data to your backend
+                // For demo purposes, we'll just show the thank you message
+
+                // Show thank you message
+                thankYouMessage.style.display = "block";
+
+                // Reset form
+                feedbackForm.reset();
+                stars.forEach((s) => s.classList.remove("active"));
+                ratingInput.value = 0;
+
+                // Add the new feedback to the list (in a real app this would come from the server)
+                addFeedbackToList(feedbackData);
+
+                // Scroll to thank you message
+                thankYouMessage.scrollIntoView({ behavior: "smooth" });
+
+                // Hide thank you message after 5 seconds
+                setTimeout(() => {
+                  thankYouMessage.style.display = "none";
+                }, 5000);
+              });
+
+              // Cancel button
+              document
+                .getElementById("cancel-btn")
+                .addEventListener("click", function () {
+                  feedbackForm.reset();
+                  stars.forEach((s) => s.classList.remove("active"));
+                  ratingInput.value = 0;
+                });
+
+              // Function to add new feedback to the list
+              function addFeedbackToList(feedback) {
+                const feedbackList = document.getElementById("feedback-list");
+
+                const now = new Date();
+                const formattedDate = `${now.toLocaleString("default", {
+                  month: "short",
+                })} ${now.getDate()}, ${now.getFullYear()}`;
+
+                const newFeedback = document.createElement("div");
+                newFeedback.className = "feedback-item";
+                newFeedback.innerHTML = `
+          <div class="feedback-header">
+            <div class="feedback-type">${feedback.type}</div>
+            <div class="feedback-date">${formattedDate}</div>
+          </div>
+          <div class="feedback-message">
+            ${feedback.subject}: ${feedback.message}
+          </div>
+          <div class="feedback-status status-pending">Pending</div>
+        `;
+
+                // Add new feedback at the top of the list
+                feedbackList.insertBefore(newFeedback, feedbackList.firstChild);
+              }
+            });
+          </script>
+        </body>
+      </html>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCvHiTAGdlMaH2WNb4LmxlUMJ9BIwNxF_g",
+        authDomain: "bms-exsel.firebaseapp.com",
+        projectId: "bms-exsel",
+        storageBucket: "bms-exsel.appspot.com",
+        messagingSenderId: "950039193184",
+        appId: "1:950039193184:web:f97fc79d5798ab3f628505",
+        measurementId: "G-L8S1N8Q0CD",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+
+      // Function to Update User Profile
+      function updateUserProfile(user) {
+        if (!user) return;
+
+        console.log("Updating User Profile:", user); // Debugging Step
+
+        const userName = user.displayName || "User";
+        const userProfilePicture =
+          user.photoURL || "https://via.placeholder.com/40"; // Default image
+
+        // Update UI Elements
+        document.getElementById("user-name").textContent = userName;
+        document.querySelector(
+          ".user-avatar"
+        ).innerHTML = `<img src="${userProfilePicture}" alt="User Avatar">`;
+      }
+
+      // Load User Profile on Authentication State Change
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          console.log("User Logged In:", user);
+          updateUserProfile(user);
+        } else {
+          console.warn("User not logged in, redirecting...");
+          window.location.href = "{{ url_for('home') }}";
+        }
+      });
+
+      // Toggle dropdown when clicking on user profile
+      document.querySelector(".user-profile").addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent event from bubbling
+        document.querySelector(".dropdown-menu").classList.toggle("active");
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        const dropdown = document.querySelector(".dropdown-menu");
+        const userProfile = document.querySelector(".user-profile");
+
+        if (!userProfile.contains(e.target)) {
+          dropdown.classList.remove("active");
+        }
+      });
+      function loadPage(pageUrl) {
+        const mainContent = document.getElementById("main-content");
+
+        mainContent.innerHTML = `
+    <div style="text-align: center; padding: 20px;">
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
+      <p>Loading...</p>
+    </div>`;
+
+        fetch(pageUrl)
+          .then((response) => response.text())
+          .then((html) => {
+            mainContent.innerHTML = html;
+
+            // Re-run Firebase authentication after loading new content
+            onAuthStateChanged(auth, (user) => {
+              if (user) {
+                updateUserProfile(user);
+              }
+            });
+
+            // Extract and execute new scripts
+            mainContent.querySelectorAll("script").forEach((oldScript) => {
+              const newScript = document.createElement("script");
+              newScript.textContent = oldScript.textContent;
+              document.body.appendChild(newScript);
+            });
+          })
+          .catch((error) => console.error("Error loading page:", error));
+      }
+
+      // Attach navigation event listeners
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", function (event) {
+          event.preventDefault();
+          const pageUrl = this.getAttribute("href");
+          loadPage(pageUrl);
+        });
+      });
+
+      // Logout Function
+      document
+        .getElementById("logout-btn")
+        .addEventListener("click", logoutUser);
+
+      function logoutUser() {
+        signOut(auth)
+          .then(() => {
+            console.log("User signed out.");
+            window.location.href = "{{ url_for('home') }}";
+          })
+          .catch((error) => {
+            console.error("Logout Error:", error);
+          });
+      }
+    </script>
+  </body>
+</html>

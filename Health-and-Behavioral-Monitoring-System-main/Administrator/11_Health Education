@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='/images/HBMS.ico') }}"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BMS - Dashboard</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      :root {
+        --sidebar-width: 250px;
+        --header-height: 70px;
+        --primary-color: #1e3c72;
+        --secondary-color: #ff7e5f;
+        --hover-color: #2a5298;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #f5f7fa;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        background: var(--primary-color);
+        color: white;
+        transition: 0.3s;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto; /* Enables scrolling for menu items */
+        overflow-x: hidden; /* Prevents horizontal scrolling */
+        max-height: 100vh; /* Keeps sidebar within viewport height */
+        scrollbar-width: thin; /* Makes scrollbar thinner */
+        scrollbar-color: #ccc transparent; /* Custom scrollbar colors */
+      }
+
+      /* Optional: Style the scrollbar for WebKit browsers */
+      .sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb {
+        background-color: #888; /* Scrollbar color */
+        border-radius: 5px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb:hover {
+        background-color: #555; /* Darker on hover */
+      }
+
+      /* Ensure the content inside the sidebar doesn't overflow */
+      .sidebar nav {
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden; /* Extra safety */
+      }
+
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 10px;
+        color: white;
+        text-decoration: none; /* Removes underline */
+        border-radius: 5px;
+        transition: 0.3s;
+        cursor: pointer;
+      }
+
+      .nav-item:hover {
+        background-color: #2a5298;
+      }
+
+      .nav-item.active {
+        background-color: #ff7e5f;
+      }
+
+      /* Ensure all nested elements inside links also inherit no underline */
+      .nav-item i,
+      .nav-item span {
+        text-decoration: none; /* Ensures icons and text don't get underlined */
+      }
+
+      .sidebar-header {
+        position: sticky;
+        top: 0;
+        background: var(--primary-color);
+        z-index: 1001; /* Ensures it stays above scrolling content */
+        padding: 1rem 0;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .sidebar-header img {
+        width: 140px; /* Adjust width */
+        max-width: 100%;
+        height: auto; /* Maintain aspect ratio */
+        display: block; /* Remove extra space */
+        margin: 0 auto; /* Center the image */
+      }
+
+      /* Header Styles */
+      .header {
+        position: fixed;
+        right: 0;
+        top: 0;
+        left: var(--sidebar-width);
+        height: var(--header-height);
+        background: white;
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        z-index: 999;
+      }
+
+      /* Main Content Area */
+      .main-content {
+        margin-left: var(--sidebar-width);
+        padding-top: var(--header-height);
+        padding: calc(var(--header-height) + 20px) 20px 20px;
+        min-height: 100vh;
+      }
+
+      .search-bar {
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        border-radius: 25px;
+        padding: 8px 15px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        transition: all 0.3s ease-in-out;
+        border: 1px solid #ccc;
+        position: relative;
+      }
+
+      .search-bar i {
+        font-size: 16px;
+        color: #666;
+        position: absolute;
+        left: 12px; /* Adjust icon position inside the box */
+      }
+
+      .search-bar input {
+        border: none;
+        outline: none;
+        font-size: 16px;
+        padding: 8px 10px 8px 35px; /* Left padding to prevent overlap */
+        width: 100%;
+        background: transparent;
+        border-radius: 25px;
+      }
+
+      .search-bar:hover {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      }
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+      .user-avatar img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      /* Dropdown Styles */
+      .profile-dropdown {
+        position: absolute;
+        top: 70px; /* Adjust to match header height */
+        right: 20px;
+        background: white;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        width: 200px;
+        padding: 15px;
+        display: none; /* Initially Hidden */
+        z-index: 1000;
+      }
+
+      .profile-header {
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .profile-header img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+      }
+
+      .profile-header h4 {
+        font-size: 16px;
+        color: #333;
+      }
+
+      .profile-dropdown button {
+        width: 100%;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px 0;
+        transition: background 0.3s;
+      }
+
+      .profile-dropdown button:hover {
+        background: var(--hover-color);
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 200px;
+        display: none;
+        z-index: 1000;
+        margin-top: 10px;
+        border: 1px solid #eee;
+      }
+
+      .dropdown-menu.active {
+        display: block;
+      }
+
+      .dropdown-item {
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #333;
+        text-decoration: none;
+        transition: background-color 0.2s;
+      }
+
+      .dropdown-item:first-child {
+        border-radius: 8px 8px 0 0;
+      }
+
+      .dropdown-item:last-child {
+        border-radius: 0 0 8px 8px;
+      }
+
+      .dropdown-item:hover {
+        background-color: #f5f7fa;
+      }
+
+      .dropdown-item i {
+        width: 16px;
+        color: var(--primary-color);
+      }
+
+      /* Add arrow to dropdown */
+      .dropdown-menu::before {
+        content: "";
+        position: absolute;
+        top: -8px;
+        right: 20px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        transform: rotate(45deg);
+        border-left: 1px solid #eee;
+        border-top: 1px solid #eee;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+        }
+
+        .header {
+          left: 0;
+        }
+
+        .main-content {
+          margin-left: 0;
+        }
+
+        .sidebar.active {
+          transform: translateX(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <img src="static/images/HBMS.png" alt="Logo" />
+        <h3>HBMS Dashboard</h3>
+      </div>
+      <nav>
+        <a href="/home" class="nav-item">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="/live-monitoring" class="nav-item">
+          <i class="fas fa-video"></i>
+          <span>Live Monitoring</span>
+        </a>
+        <a href="/analytics" class="nav-item">
+          <i class="fas fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
+        <a href="/notifications" class="nav-item">
+          <i class="fas fa-bell"></i>
+          <span>Notifications</span>
+        </a>
+        <a href="/reports" class="nav-item">
+          <i class="fas fa-file-alt"></i>
+          <span>Reports</span>
+        </a>
+        <a href="/appointments" class="nav-item">
+          <i class="fas fa-calendar-check"></i>
+          <span>Appointments</span>
+        </a>
+        <a href="/chat" class="nav-item">
+          <i class="fas fa-robot"></i>
+          <span>AI Chat Assistance</span>
+        </a>
+        <a href="/education" class="nav-item active">
+          <i class="fas fa-book-medical"></i>
+          <span>Health Education</span>
+        </a>
+        <a href="/sensor-management" class="nav-item">
+          <i class="fas fa-microchip"></i>
+          <span>Sensor Management</span>
+        </a>
+        <a href="/user-management" class="nav-item">
+          <i class="fas fa-users"></i>
+          <span>User Management</span>
+        </a>
+
+        <a href="/professional-about-us-page" class="nav-item">
+          <i class="fas fa-info-circle"></i>
+          <span>About Us</span>
+        </a>
+        <a href="/feedback" class="nav-item">
+          <i class="fas fa-comment-dots"></i>
+          <span>Feedback</span>
+        </a>
+        <a href="/change-password" class="nav-item">
+          <i class="fas fa-key"></i>
+          <span>Change Password</span>
+        </a>
+        <a href="#" class="nav-item" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </nav>
+    </div>
+
+    <header class="header">
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search..." />
+      </div>
+      <div class="user-profile">
+        <div class="notifications">
+          <i class="fas fa-bell"></i>
+        </div>
+        <div class="user-avatar">
+          <!-- Profile picture will be inserted dynamically -->
+        </div>
+        <div class="user-info">
+          <h4 id="user-name">Loading...</h4>
+        </div>
+        <!-- Add Dropdown Menu -->
+        <div class="dropdown-menu">
+          <a
+            href="#"
+            class="dropdown-item"
+            id="update-profile-btn"
+            data-page="/firebase-profile-update"
+          >
+            <i class="fas fa-user"></i>
+            Update Profile
+          </a>
+          <a href="#" class="dropdown-item" id="logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div id="main-content" class="main-content">
+      <!-- Content will be loaded here dynamically -->
+      <!--<h1>Welcome to BMS Dashboard</h1>
+      <p>Please select an option from the sidebar to get started.</p>-->
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          />
+          <title>Video Collection</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body {
+              background-color: #f4f4f6;
+            }
+            .video-card {
+              transition: transform 0.3s ease;
+            }
+            .video-card:hover {
+              transform: scale(1.03);
+            }
+          </style>
+        </head>
+        <body class="bg-gray-100 p-4">
+          <div class="container mx-auto">
+            <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">
+              Health Education and Tips
+            </h1>
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <!-- Video 1 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/iKSSi5pi57I?si=x-Kg-YjqTUr8ifXs"
+                    title="How to Bottle Feed your Baby: Paced Bottle Feeding"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    How to Bottle Feed your Baby: Paced Bottle Feeding
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 1</p>
+                </div>
+              </div>
+
+              <!-- Video 2 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/CXWzqbe1i9c?si=qbc6Bex4yVOlWBVU"
+                    title="Guide To Taking Care Of a Newborn Baby"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Guide To Taking Care Of a Newborn Baby
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 2</p>
+                </div>
+              </div>
+
+              <!-- Video 3 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/-CWJYxIvoFQ?si=XWhTQGOP_FZbiqls"
+                    title="Caring For Your Newborn"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">Caring For Your Newborn</h3>
+                  <p class="text-xs text-gray-600">Description 3</p>
+                </div>
+              </div>
+
+              <!-- Video 4 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/WQuX_Yw3yIg?si=R40xtHRUPHMyn2cl"
+                    title="Pediatrician Explains Newborn Baby Basics: Feeding, Safe Sleep, Pooping, Car Seats, and more."
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Pediatrician Explains Newborn Baby Basics: Feeding, Safe
+                    Sleep, Pooping, Car Seats, and more.
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 4</p>
+                </div>
+              </div>
+
+              <!-- Video 5 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/8HoRppfwWBg?si=ScLly9pK1y_JwgRX"
+                    title="Video 5"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    How to Bottle-Feed Your Baby
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 5</p>
+                </div>
+              </div>
+
+              <!-- Video 6 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/YeDwkE9p52M?si=3vWLgtmoachWNj0Y"
+                    title="How to perform CPR on an infant"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    How to perform CPR on an infant
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 6</p>
+                </div>
+              </div>
+
+              <!-- Video 7 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/n65HW1iJUuY?si=jp6KLYqmO9qVphLq"
+                    title="CPR for Infants (Newborn to 1 Year)"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    CPR for Infants (Newborn to 1 Year)
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 7</p>
+                </div>
+              </div>
+
+              <!-- Video 8 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/avYRvVHAvfM?si=4D0r33ti0Dcyo5CV"
+                    title="How to Give Baby CPR - First Aid Training - St John Ambulance
+              "
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    How to Give Baby CPR - First Aid Training - St John
+                    Ambulance
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 8</p>
+                </div>
+              </div>
+
+              <!-- Video 9 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/IPiFqJyZJR8?si=b4UJwfqFnV8fg6ak"
+                    title="Newborn Sleep Patterns: Anuradha Rajagopalan, MD"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Newborn Sleep Patterns: Anuradha Rajagopalan, MD
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 9</p>
+                </div>
+              </div>
+
+              <!-- Video 10 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/JAD0HdV_-L8?si=2HNL68d1l9HvzQl_"
+                    title="Sleeping pattern in babies"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Sleeping pattern in babies
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 10</p>
+                </div>
+              </div>
+
+              <!-- Video 11 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/GymXjJJ7Ugo?si=oSLBK3FzVONZxUQk"
+                    title="Children First Aid: Choking Child part 1 | First Aid | British Red Cross"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Children First Aid: Choking Child part 1 | First Aid |
+                    British Red Cross
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 11</p>
+                </div>
+              </div>
+
+              <!-- Video 12 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/0JHNvpQ9JW8?si=EvG3lZTQFLM-ST10"
+                    title="Basic First Aid for Kids | First Aid Training!"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Basic First Aid for Kids | First Aid Training!
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 12</p>
+                </div>
+              </div>
+
+              <!-- Video 13 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/l_ZIXwj4NBE?si=9dmLVeIWkbkLopHf"
+                    title="NUTRIENTS | Educational Videos for Kids"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    NUTRIENTS | Educational Videos for Kids
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 13</p>
+                </div>
+              </div>
+
+              <!-- Video 14 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/pmgkj01uUTw?si=pVOhpGhUu6QzeHYl"
+                    title="Food Groups for Kids | Learn about the five food groups and their benefits"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Food Groups for Kids | Learn about the five food groups and
+                    their benefits
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 14</p>
+                </div>
+              </div>
+
+              <!-- Video 15 -->
+              <div
+                class="video-card bg-white rounded-lg shadow-md overflow-hidden"
+              >
+                <div class="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src="https://www.youtube.com/embed/mMHVEFWNLMc?si=Dw7igkG1NTdJJj0n"
+                    title="Healthy Eating: An introduction for children aged 5-11"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+                <div class="p-3">
+                  <h3 class="font-semibold text-sm">
+                    Healthy Eating: An introduction for children aged 5-11
+                  </h3>
+                  <p class="text-xs text-gray-600">Description 15</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCvHiTAGdlMaH2WNb4LmxlUMJ9BIwNxF_g",
+        authDomain: "bms-exsel.firebaseapp.com",
+        projectId: "bms-exsel",
+        storageBucket: "bms-exsel.appspot.com",
+        messagingSenderId: "950039193184",
+        appId: "1:950039193184:web:f97fc79d5798ab3f628505",
+        measurementId: "G-L8S1N8Q0CD",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+
+      // Function to Update User Profile
+      function updateUserProfile(user) {
+        if (!user) return;
+
+        console.log("Updating User Profile:", user); // Debugging Step
+
+        const userName = user.displayName || "User";
+        const userProfilePicture =
+          user.photoURL || "https://via.placeholder.com/40"; // Default image
+
+        // Update UI Elements
+        document.getElementById("user-name").textContent = userName;
+        document.querySelector(
+          ".user-avatar"
+        ).innerHTML = `<img src="${userProfilePicture}" alt="User Avatar">`;
+      }
+
+      // Load User Profile on Authentication State Change
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          console.log("User Logged In:", user);
+          updateUserProfile(user);
+        } else {
+          console.warn("User not logged in, redirecting...");
+          window.location.href = "{{ url_for('home') }}";
+        }
+      });
+
+      // Toggle dropdown when clicking on user profile
+      document.querySelector(".user-profile").addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent event from bubbling
+        document.querySelector(".dropdown-menu").classList.toggle("active");
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        const dropdown = document.querySelector(".dropdown-menu");
+        const userProfile = document.querySelector(".user-profile");
+
+        if (!userProfile.contains(e.target)) {
+          dropdown.classList.remove("active");
+        }
+      });
+
+      // Logout Function
+      document
+        .getElementById("logout-btn")
+        .addEventListener("click", logoutUser);
+
+      function logoutUser() {
+        signOut(auth)
+          .then(() => {
+            console.log("User signed out.");
+            window.location.href = "{{ url_for('home') }}";
+          })
+          .catch((error) => {
+            console.error("Logout Error:", error);
+          });
+      }
+    </script>
+  </body>
+</html>
